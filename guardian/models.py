@@ -7,21 +7,15 @@ BATCH_SIZE = 64        #must be even
 TRIPLET_PER_BATCH = 3
 NUM_FRAMES = 160   # 299 - 16*2
 
-import os
-import sys
-
-import logging
 
 import tensorflow.keras.backend as K
 import math
-import tensorflow as tf
 
 from tensorflow.keras import layers
 from tensorflow.keras import regularizers
-from tensorflow.keras.layers import Input, GRU
+from tensorflow.keras.layers import Input
 from tensorflow.keras.layers import Conv2D
-from tensorflow.keras.layers import Lambda, Dense, RepeatVector
-from tensorflow.keras.layers import Reshape
+from tensorflow.keras.layers import Lambda, Dense
 from tensorflow.keras.layers import BatchNormalization
 from tensorflow.keras.models import Model
 

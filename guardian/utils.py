@@ -6,15 +6,17 @@ import random
 import logging
 import re
 from glob import glob
-import matplotlib.pyplot as plt
-import constants as c
+
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(BASE_DIR)
+
+import guardian.constants as c
 
 
 def natural_sort(l):
     convert = lambda text: int(text) if text.isdigit() else text.lower()
     alphanum_key = lambda key: [convert(c) for c in re.split('([0-9]+)', key)]
     return sorted(l, key=alphanum_key)
-
 
 def get_last_checkpoint_if_any(checkpoint_folder):
     os.makedirs(checkpoint_folder, exist_ok=True)
@@ -37,56 +39,6 @@ def get_checkpoint_name_training(checkpoint_folder, name_training):
     if len(files) == 0:
         return None
     return natural_sort(files)[-1]
-
-def create_dir_and_delete_content(directory):
-    os.makedirs(directory, exist_ok=True)
-    files = sorted(filter(lambda f: os.path.isfile(f) and f.endswith(".h5"), 
-        map(lambda f: os.path.join(directory, f), os.listdir(directory))),
-        key=os.path.getmtime)
-    # delete all but most current file to assure the latest model is availabel even if process is killed
-    for file in files[:-4]:
-        logging.info("removing old model: {}".format(file))
-        os.remove(file)
-
-def changefilename(path):
-    files = os.listdir(path)
-    for file in files:
-        name=file.replace('-','_')
-        lis = name.split('_')
-        speaker = '_'.join(lis[:3])
-        utt_id = '_'.join(lis[3:])
-        newname = speaker + '-' +utt_id
-        os.rename(path+'/'+file, path+'/'+newname)
-
-def copy_wav(kaldi_dir,out_dir):
-    import shutil
-    from time import time
-    orig_time = time()
-    with open(kaldi_dir+'/utt2spk','r') as f:
-        utt2spk = f.readlines()
-
-    with open(kaldi_dir+'/wav.scp','r') as f:
-        wav2path = f.readlines()
-
-    utt2path = {}
-    for wav in wav2path:
-        utt = wav.split()[0]
-        path = wav.split()[1]
-        utt2path[utt] = path
-    print(" begin to copy %d waves to %s" %(len(utt2path), out_dir))
-    for i in range(len(utt2spk)):
-        utt_id = utt2spk[i].split()[0].split('_')[:-1]  #utr2spk 中的 utt id 是'ZEBRA-KIDS0000000_1735129_26445a50743aa75d_00000 去掉后面的 _000
-        utt_id = '_'.join(utt_id)
-        speaker = utt2spk[i].split()[1]
-        filepath = utt2path[utt_id]
-                                                      #为了统一成和librispeech 格式一致 speaker与utt 用 '-'分割 speaker内部就用'_'
-        target_filepath = out_dir + speaker.replace('-','_') + '-' + utt_id.replace('-','_') + '.wav'
-        if os.path.exists(target_filepath):
-            if i % 10 == 0: print(" No.:{0} Exist File:{1}".format(i, filepath))
-            continue
-        shutil.copyfile(filepath, target_filepath)
-
-    print("cost time: {0:.3f}s ".format(time() - orig_time))
 
 ## moving from pre_pricess_embeddings
 
@@ -214,14 +166,12 @@ def FC_loading_embedding(embedding_folder):
 def auto_stat_test_model(model1, model2, name_training, test_dir, file_name, checkpoint):    
     #checkpoint -> a array length 10
     num_sample = 2
-    
     users_type = 'random'
 
     embedding = creat_data_convert_to_embedding(users_type, num_sample, model1, test_dir, file_name, checkpoint)
     embedding = embedding_x_for_cnn(embedding)
     embedding = [embedding]
     embedding = np.array(embedding)
-
 
     result = npy_embedding_to_discriminator_name_training(model2, name_training, embedding)
     if result[0][0] < 0.5:
